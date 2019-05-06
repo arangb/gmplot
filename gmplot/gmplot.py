@@ -28,7 +28,7 @@ def safe_iter(var):
 
 class GoogleMapPlotter(object):
 
-    def __init__(self, center_lat, center_lng, zoom, apikey=''):
+    def __init__(self, center_lat, center_lng, zoom, map_type=None, apikey=''):
         self.center = (float(center_lat), float(center_lng))
         self.zoom = int(zoom)
         self.apikey = str(apikey)
@@ -45,6 +45,12 @@ class GoogleMapPlotter(object):
         self.coloricon = 'http://www.googlemapsmarkers.com/v1/%s'
         self.color_dict = mpl_color_map
         self.html_color_codes = html_color_codes
+
+        # option for satellite map, default is road map
+        if map_type == ('satellite' or 'Satellite' or 'SATELLITE'):
+            self.map_type = 'google.maps.MapTypeId.SATELLITE'
+        else:
+            self.map_type = 'google.maps.MapTypeId.ROADMAP'
 
     @classmethod
     def from_geocode(cls, location_string, zoom=13):
@@ -334,14 +340,13 @@ class GoogleMapPlotter(object):
         for shape, settings in self.shapes:
             self.write_polygon(f, shape, settings)
 
-    # TODO: Add support for mapTypeId: google.maps.MapTypeId.SATELLITE
     def write_map(self,  f):
         f.write('\t\tvar centerlatlng = new google.maps.LatLng(%f, %f);\n' %
                 (self.center[0], self.center[1]))
         f.write('\t\tvar myOptions = {\n')
         f.write('\t\t\tzoom: %d,\n' % (self.zoom))
         f.write('\t\t\tcenter: centerlatlng,\n')
-        f.write('\t\t\tmapTypeId: google.maps.MapTypeId.ROADMAP\n')
+        f.write('\t\t\tmapTypeId: %s, \n' % (self.map_type))
         f.write('\t\t};\n')
         f.write(
             '\t\tvar map = new google.maps.Map(document.getElementById("map_canvas"), myOptions);\n')
