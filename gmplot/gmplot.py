@@ -68,12 +68,12 @@ class GoogleMapPlotter(object):
     def grid(self, slat, elat, latin, slng, elng, lngin):
         self.gridsetting = [slat, elat, latin, slng, elng, lngin]
 
-    def marker(self, lat, lng, color='#FF0000', c=None, title="no implementation"):
+    def marker(self, lat, lng, color='#FF0000', c=None, title="no implementation", imgname="dummy.png"):
         if c:
             color = c
         color = self.color_dict.get(color, color)
         color = self.html_color_codes.get(color, color)
-        self.points.append((lat, lng, color[1:], title))
+        self.points.append((lat, lng, color[1:], title, imgname))
 
     def scatter(self, lats, lngs, color=None, size=None, marker=True, c=None, s=None, symbol='o', **kwargs):
         color = color or c
@@ -301,28 +301,9 @@ class GoogleMapPlotter(object):
             self.write_polyline(f, line, settings)
 
     def write_points(self, f):
-        f.write('\t\tvar locations = [\n')
+        f.write('\t\tvar infowindow = new google.maps.InfoWindow({});')
         for point in self.points:
-            f.write('\t\t\t'+str(list(point))+',\n')
-            #self.write_point(f, point[0], point[1], point[2], point[3])
-        f.write('\t\t];\n')
-        f.write('\t\tvar infoWindow = new google.maps.InfoWindow();\n')
-        f.write('\t\tvar marker, i;\n')
-        f.write('\t\tfor (i = 0; i < locations.length; i++) {\n')
-        f.write('\t\t\tvar img = new google.maps.MarkerImage(\'http://www.googlemapsmarkers.com/v1/\' + locations[i][2]);\n')
-        f.write('\t\t\tmarker = new google.maps.Marker({\n')
-        f.write('\t\t\t\tposition: new google.maps.LatLng(locations[i][0], locations[i][1]),\n')
-        f.write('\t\t\t\ticon: img,\n')
-        f.write('\t\t\t\tmap: map\n')
-        f.write('\t\t\t});\n')
-        f.write("\t\t\tgoogle.maps.event.addListener(marker, 'click', (function(marker, i) {\n")
-        f.write('\t\t\t\treturn function() {\n')
-        f.write('\t\t\t\t\tinfoWindow.setContent(locations[i][3]);\n')
-        f.write('\t\t\t\t\tinfoWindow.open(map,marker);\n')
-        f.write('\t\t\t\t}\n')
-        f.write('\t\t\t})(marker, i));\n')
-        f.write('\t\t}\n')
-
+            self.write_point(f, point[0], point[1], point[2], point[3], point[4])
 
     def write_circles(self, f):
         for circle, settings in self.circles:
@@ -352,7 +333,7 @@ class GoogleMapPlotter(object):
             '\t\tvar map = new google.maps.Map(document.getElementById("map_canvas"), myOptions);\n')
         f.write('\n')
 
-    def write_point(self, f, lat, lon, color, title):
+    def write_point(self, f, lat, lon, color, title, imgname='dummy.png'):
         f.write('\t\tvar latlng = new google.maps.LatLng(%f, %f);\n' %
                 (lat, lon))
         f.write('\t\tvar img = new google.maps.MarkerImage(\'%s\');\n' %
@@ -363,6 +344,14 @@ class GoogleMapPlotter(object):
         f.write('\t\tposition: latlng\n')
         f.write('\t\t});\n')
         f.write('\t\tmarker.setMap(map);\n')
+        # Write InfoWindow with link to local image (imgname):
+        f.write('\n')
+        f.write('\t\tgoogle.maps.event.addListener(marker, \'click\', \n')
+        f.write('\t\t(function(marker) {return function() {\n')
+        f.write('\t\tinfowindow.setContent("<h4>%s</h4><div>' % title)
+        f.write('<img width=\'254\' height=\'254\' src=\'%s\'</div>");\n' % imgname)
+        f.write('\t\tinfowindow.open(map, marker);\n')
+        f.write('\t\t}})(marker));\n')
         f.write('\n')
 
     def write_symbol(self, f, symbol, settings):
